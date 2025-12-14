@@ -105,14 +105,3 @@ flet run main.py
 | `Browser not opening` | OS restriction | Copy the URL from the terminal and paste it manually. |
 
 -----
-
-\<div align="center"\>
-
-Made with ❤️ in Python
-<br>
-*Enjoy the Vibe\!*
-
-\</div\>
-
-```
-```
