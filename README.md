@@ -36,7 +36,7 @@
 
 ### 1. Clone the repository
 ```bash
-git clone [https://github.com/GustaveMAG/vienna-vibe.git](https://github.com/Pozzzzzz/vienna-vibe.git)
+git clone [https://github.com/GustaveMAG/vienna-vibe.git](https://github.com/GustaveMAG/vienna-vibe.git)
 cd vienna-vibe
 ````
 
