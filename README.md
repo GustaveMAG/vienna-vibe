@@ -176,7 +176,7 @@ run.bat
 
 ---
 
-## 📸 Screenshots
+## 📸 Screenshot
 
 <div align="center">
   <img src="images/main_screen.png" alt="Main Screen" width="400"/>
