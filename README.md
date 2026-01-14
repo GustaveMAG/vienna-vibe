@@ -15,9 +15,8 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Flet](https://img.shields.io/badge/UI-Flet-purple?style=for-the-badge&logo=flutter&logoColor=white)](https://flet.dev/)
 [![Spotify](https://img.shields.io/badge/Spotify-API-1DB954?style=for-the-badge&logo=spotify&logoColor=white)](https://developer.spotify.com/documentation/web-api/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-[Features](#-features) • [Installation](#-installation) • [Configuration](#-configuration) • [Usage](#-usage) • [License](#-license)
+[Features](#-features) • [Installation](#-installation) • [Configuration](#-configuration) • [Usage](#-usage) 
 
 </div>
 
@@ -181,7 +180,6 @@ run.bat
 
 <div align="center">
   <img src="images/main_screen.png" alt="Main Screen" width="400"/>
-  <img src="images/dark_theme.png" alt="Dark Theme" width="400"/>
 </div>
 
 ---
