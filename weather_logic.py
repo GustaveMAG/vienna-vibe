@@ -3,12 +3,12 @@ import requests
 import datetime
 import pytz 
 
-# --- 1. CONFIGURATION & DICTIONNAIRE (Restauré pour éviter l'erreur d'import) ---
+# CONFIGURATION & DICTIONARY 
 VIENNA_LAT = 48.2085
 VIENNA_LON = 16.3721
 WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
 
-# On garde ce dictionnaire car main.py l'importe, même si on utilise une logique plus maligne plus bas
+# We keep this dictionary because main.py imports it, even though we use smarter logic below
 MOOD_TO_SPOTIFY = {
     "Energize": {"seed_genres": ["pop", "dance", "electronic"]},
     "Calm": {"seed_genres": ["acoustic", "jazz", "lo-fi"]},
@@ -18,9 +18,9 @@ MOOD_TO_SPOTIFY = {
     "Neutral": {"seed_genres": ["chill", "ambient"]},
 }
 
-# --- 2. FONCTION DE RÉCUPÉRATION (Optimisée JSON) ---
+# RETRIEVAL FUNCTION 
 def get_current_weather():
-    """Récupère la météo et ajoute des détails temporels."""
+    ##Retrieves weather and adds temporal details
     params = {
         "latitude": VIENNA_LAT,
         "longitude": VIENNA_LON,
@@ -34,16 +34,16 @@ def get_current_weather():
         response.raise_for_status()
         data = response.json()
         
-        # Heure actuelle
+        # Current hour
         now = datetime.datetime.now()
         current_hour_index = now.hour
         
-        # Extraction des données
+        # Data extraction
         temp = data['hourly']['temperature_2m'][current_hour_index]
         weather_code = data['hourly']['weather_code'][current_hour_index]
         wind = data['hourly']['wind_speed_10m'][current_hour_index]
         
-        # Détermination de la condition
+        # Determine condition
         condition = "Neutral"
         if weather_code == 0: condition = "Clear"
         elif weather_code in [1, 2, 3]: condition = "Cloudy"
@@ -51,7 +51,7 @@ def get_current_weather():
         elif weather_code in [71, 73, 75, 77, 85, 86]: condition = "Snow"
         elif weather_code in [95, 96, 99]: condition = "Thunderstorm"
 
-        description = f"{condition} | {temp:.1f}°C | Vent {wind:.1f} km/h"
+        description = f"{condition} | {temp:.1f}°C | Wind {wind:.1f} km/h"
 
         return {
             'condition': condition,
@@ -62,28 +62,28 @@ def get_current_weather():
         }
 
     except Exception as e:
-        print(f"Erreur API : {e}")
-        return {'condition': "Neutral", 'temperature': 15, 'wind_speed': 10, 'hour': 12, 'description': "Mode Offline"}
+        print(f"API Error: {e}")
+        return {'condition': "Neutral", 'temperature': 15, 'wind_speed': 10, 'hour': 12, 'description': "Offline Mode"}
 
-# --- 3. ALGORITHME DE VIBE "INTELLIGENT" ---
+# SPOTIFY ALGORITHM 
 def map_weather_to_spotify(weather_data):
-    """
-    Calcule des paramètres audio précis (Valence, Energie, Tempo)
-    en fonction de la météo ET du moment de la journée.
-    """
+    
+    ##Calculates precise audio parameters (Valence, Energy, Tempo) based on weather AND time of day.
+    
+    
     condition = weather_data['condition']
     hour = weather_data['hour']
     temp = weather_data['temperature']
     wind = weather_data['wind_speed']
     
-    # Valeurs par défaut
+    # Default values
     seed_genres = ["pop"] 
     target_valence = 0.5  
     target_energy = 0.5   
     target_tempo = 110    
     target_acousticness = 0.0
 
-    # LOGIQUE TEMPORELLE
+    # TEMPORAL LOGIC
     if 5 <= hour < 12:
         time_vibe = "Morning"
         target_energy -= 0.2
@@ -99,7 +99,7 @@ def map_weather_to_spotify(weather_data):
         target_energy = 0.4 
         seed_genres = ["deep-house", "ambient", "minimal-techno"]
 
-    # LOGIQUE MÉTÉO
+    # WEATHER LOGIC
     if condition == "Clear":
         target_valence = 0.8
         if time_vibe == "Morning": seed_genres = ["acoustic", "folk", "singer-songwriter"]
@@ -127,12 +127,12 @@ def map_weather_to_spotify(weather_data):
         target_valence = 0.2 
         seed_genres = ["rock", "metal", "soundtracks"]
 
-    # MICRO-AJUSTEMENTS
+    # MICRO-ADJUSTMENTS
     if wind > 20: target_tempo += (wind * 0.5)
     if temp < 5: target_acousticness = 0.7
     else: target_acousticness = 0.2
 
-    # Normalisation
+    # Normalization
     target_valence = max(0, min(1, target_valence))
     target_energy = max(0, min(1, target_energy))
 
@@ -148,9 +148,8 @@ def map_weather_to_spotify(weather_data):
 
 
 def get_forecast(forecast_days: int = 5):
-    """Retourne une liste de dicts pour les prochains jours :
-    [{'date': '2025-12-08', 'max': 5.2, 'min': -1.1, 'weather_code': 1, 'condition': 'Cloudy'}, ...]
-    """
+    ##Returns a list of data for the next days:
+    
     params = {
         "latitude": VIENNA_LAT,
         "longitude": VIENNA_LON,
@@ -202,9 +201,8 @@ def get_forecast(forecast_days: int = 5):
 
 
 def get_hourly_forecast(date_str: str, days: int = 5):
-    """Retourne la liste des heures pour une date donnée (YYYY-MM-DD).
-    Ex: [{'time':'2025-12-08T14:00', 'temp':5.2, 'weather_code':1, 'wind':3.2}, ...]
-    """
+    ##Returns the list of hours for a given date (YYYY-MM-DD).
+    
     params = {
         "latitude": VIENNA_LAT,
         "longitude": VIENNA_LON,
