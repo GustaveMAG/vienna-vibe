@@ -182,6 +182,5 @@ def test_listening_joins_to_weather() -> None:
     assert row is not None
     assert int(row["total"]) > 0
     assert int(row["matched"]) > 0, (
-        "Aucune écoute rattachée à la météo : vérifie les fuseaux horaires "
-        "des deux sources."
+        "Aucune écoute rattachée à la météo : vérifie les fuseaux horaires des deux sources."
     )
