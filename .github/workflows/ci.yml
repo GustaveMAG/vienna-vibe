@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Analyse statique et tests unitaires : rapides, sans service externe.
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Installer les dépendances
+        run: pip install -e ".[dev]"
+
+      - name: Linter (ruff)
+        run: ruff check src tests dags
+
+      - name: Vérifier le formatage
+        run: ruff format --check src tests
+
+      - name: Tests unitaires
+        run: pytest --cov=vienna_vibe --cov-report=term-missing
+
+  # Test d'intégration : on applique le schéma sur un vrai PostgreSQL et on
+  # vérifie que les contrôles qualité s'exécutent. C'est ce qui attrape les
+  # erreurs SQL, qu'aucun test unitaire ne peut voir.
+  schema-and-checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vienna
+          POSTGRES_PASSWORD: vienna
+          POSTGRES_DB: vienna_vibe_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vienna"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://vienna:vienna@localhost:5432/vienna_vibe_test
+      # Valeurs factices : aucune requête réseau n'est faite dans ce job,
+      # mais la configuration exige ces variables au démarrage.
+      SPOTIFY_CLIENT_ID: ci
+      SPOTIFY_CLIENT_SECRET: ci
+      SPOTIFY_REFRESH_TOKEN: ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Installer les dépendances
+        run: pip install -e ".[dev]"
+
+      - name: Appliquer le schéma
+        run: vienna-vibe migrate
+
+      - name: Rejouer le schéma (vérifie l'idempotence des migrations)
+        run: vienna-vibe migrate
+
+      - name: Exécuter les contrôles qualité sur base vide
+        # Sur une base sans donnée, le contrôle de fraîcheur doit échouer :
+        # c'est le comportement attendu, et on vérifie que l'échec est bien
+        # signalé par un code de retour non nul.
+        run: |
+          if vienna-vibe quality; then
+            echo "::error::Les contrôles ont réussi sur une base vide, ce qui ne devrait pas arriver."
+            exit 1
+          fi
+          echo "Le contrôle de fraîcheur a bien détecté l'absence de données."
+
+      - name: Vérifier que les vues d'analyse sont interrogeables
+        run: |
+          python - <<'PY'
+          from vienna_vibe import db
+          for view in (
+              "v_listening_with_weather",
+              "v_listening_by_weather_family",
+              "v_listening_by_hour",
+              "v_top_artists_by_weather",
+              "v_weather_coverage",
+              "v_pipeline_health",
+              "v_project_stats",
+          ):
+              db.fetch_all(f"SELECT * FROM marts.{view} LIMIT 1")
+              print(f"marts.{view} : OK")
+          PY

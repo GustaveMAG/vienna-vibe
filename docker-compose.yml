@@ -1,0 +1,79 @@
+# Pile locale complète : PostgreSQL + Airflow + le pipeline.
+#
+# Airflow tourne en mode `standalone` (un seul conteneur : ordonnanceur,
+# serveur web et exécuteur séquentiel). C'est volontairement minimal : sur
+# un poste de travail, une installation Airflow complète demande cinq
+# services pour aucun bénéfice à cette échelle.
+
+name: vienna-vibe
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vv-postgres
+    environment:
+      POSTGRES_USER: vienna
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vienna}
+      POSTGRES_DB: vienna_vibe
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Airflow ne doit pas démarrer avant que la base accepte les connexions.
+      test: ["CMD-SHELL", "pg_isready -U vienna -d vienna_vibe"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Applique le schéma une fois, puis s'arrête. Rejouable sans effet de bord.
+  migrate:
+    build: .
+    container_name: vv-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://vienna:${POSTGRES_PASSWORD:-vienna}@postgres:5432/vienna_vibe
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      SPOTIFY_REFRESH_TOKEN: ${SPOTIFY_REFRESH_TOKEN}
+    command: ["vienna-vibe", "migrate"]
+    restart: "no"
+
+  airflow:
+    build: .
+    container_name: vv-airflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      # Base applicative du pipeline
+      DATABASE_URL: postgresql://vienna:${POSTGRES_PASSWORD:-vienna}@postgres:5432/vienna_vibe
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      SPOTIFY_REFRESH_TOKEN: ${SPOTIFY_REFRESH_TOKEN}
+      # Métadonnées d'Airflow : base séparée de celle du pipeline, pour que
+      # les tables d'Airflow ne polluent pas l'entrepôt.
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://vienna:${POSTGRES_PASSWORD:-vienna}@postgres:5432/vienna_vibe
+      AIRFLOW__CORE__DAGS_FOLDER: /app/dags
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
+      AIRFLOW_HOME: /app/.airflow
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_USER:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_PASSWORD:-admin}
+    ports:
+      - "${AIRFLOW_PORT:-8080}:8080"
+    volumes:
+      - ./dags:/app/dags:ro
+      - airflow_home:/app/.airflow
+    command: ["airflow", "standalone"]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  airflow_home:

@@ -1,0 +1,28 @@
+# Normalisation des fins de ligne.
+#
+# Le pipeline s'exécute dans des conteneurs Linux. Un script shell commité en
+# CRLF y échoue avec « bad interpreter: /usr/bin/env bash^M » — l'erreur
+# fonctionne chez le développeur Windows et casse partout ailleurs.
+# On force donc LF dans le dépôt, sauf pour les scripts propres à Windows.
+
+* text=auto eol=lf
+
+# Scripts Windows : CRLF requis
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Fichiers dont les fins de ligne sont critiques côté Linux
+*.sh       text eol=lf
+Dockerfile text eol=lf
+Makefile   text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+
+# Binaires : aucune conversion
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.zip binary

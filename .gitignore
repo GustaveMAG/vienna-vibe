@@ -1,0 +1,29 @@
+# Secrets : jamais dans le dépôt
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Airflow
+.airflow/
+airflow.db
+logs/
+standalone_admin_password.txt
+
+# Systèmes
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
